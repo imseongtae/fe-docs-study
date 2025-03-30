@@ -2,7 +2,7 @@
 
 > A properly configured editor can make code clearer to read and faster to write. It can even help you catch bugs as you write them! If this is your first time setting up an editor or you’re looking to tune up your current editor, we have a few recommendations.
 
-> 적절한 개발환경은 코드의 가독성을 높이며, 개발 속도를 높여줌 <- 생산성과 관련이 있음, 야근 안 하려면 해야 함 😂 
+> 적절한 개발환경은 코드의 가독성을 높이며, 개발 속도를 높여줌 <- 생산성과 관련이 있음, 야근 안 하려면 해야 함 😂  
 > 심지어 코드를 작성하는 과정에서 버그를 찾아줄 수도 있음 <- 미래의 나를 위해 꼭 설정해야 함
 
 > ### You will learn (학습 목표)

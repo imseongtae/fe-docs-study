@@ -212,4 +212,104 @@ const inputRef = useRef(null);
 - `state`와 달리 `ref`의 현재 값을 설정해도, **리렌더링이 트리거되지 않음**(current value does not trigger a re-render)
 - 렌더링 중에는 `ref.current`를 읽거나 쓰지 않아야 함. 컴포넌트를 예측하는데 어려움이 따르게 됨
 
+---
+
 ## Challenges
+
+### 1. Fix a broken chat input
+> 💬 문제 설명 (번역)  
+> “메시지를 입력하고 Send 버튼을 클릭하면 3초 후에 ‘Sent!’ 알림이 뜹니다. 이 동안 ‘Undo’ 버튼을 클릭하면 전송을 취소하도록 되어 있어야 합니다. 하지만 ‘Undo’를 눌러도 여전히 ‘Sent!’ 메시지가 뜨는 문제가 있습니다.”  
+> 힌트: let timeoutID와 같은 일반 변수는 렌더링 사이에서 값을 유지하지 못합니다. timeoutID를 어디에 저장해야 할까요?
+
+#### 해설
+- 문제의 핵심은 timeoutID가 let으로 선언되어 있어 컴포넌트가 다시 렌더링되면 초기화된다는 점. 이로 인해 `handleUndo()`에서 참조하는 timeoutID는 이미 유효하지 않거나 `null`일 수 있음
+
+**해결 방법**: `useRef`를 사용하여 timeoutID를 `ref`에 저장하면, 컴포넌트가 리렌더링되더라도 그 값을 유지할 수 있음
+```jsx
+const timeoutRef = useRef(null);
+timeoutRef.current = setTimeout(...);
+clearTimeout(timeoutRef.current);
+```
+
+#### 학습 포인트
+- 리렌더링 사이에서 값을 유지하고 싶은 경우 ref를 사용해야 함
+- 일반 변수는 리렌더링마다 초기화되므로 컴포넌트 생명 주기와 무관한 정보는 ref에 저장
+
+#### 출제 의도
+- ref와 일반 변수의 차이를 인지하도록 유도
+- 이벤트 핸들러 사이에서의 데이터 공유를 어떻게 할 것인지 판단하게 함
+
+### 2. Fix a component failing to re-render
+> 리렌더링되지 않는 컴포넌트를 고치세요
+
+> 💬 문제 설명 (번역)  
+> “이 버튼은 ‘On’과 ‘Off’ 상태를 토글하도록 설계되었지만 항상 ‘Off’만 표시됩니다. 문제의 원인을 찾아 고쳐보세요.”  
+
+#### 해설
+- 이 문제의 핵심은 렌더링에 사용되는 값을 ref로 관리하고 있다는 점
+- ref.current는 변경되어도 컴포넌트를 리렌더링하지 않기 때문에, ref.current를 기반으로 한 화면은 업데이트되지 않음
+
+
+**해결 방법**: `useState`를 사용하여 상태를 관리하고 `setState`로 값을 갱신해야 리렌더링이 일어남
+```jsx
+const timeoutRef = useRef(null);
+timeoutRef.current = setTimeout(...);
+clearTimeout(timeoutRef.current);
+```
+
+#### 학습 포인트
+- 렌더링에 영향을 주는 값은 `state`로 관리해야 함
+- `ref`는 값을 저장하지만 렌더링을 트리거하지 않음
+
+#### 출제 의도
+- `ref`와 `state`의 용도 구분을 확실히 학습하게 함
+- 리렌더링을 유발하는 로직을 짤 때 `state`의 필요성을 체감시키기 위함
+
+### 3. Fix debouncing
+> 디바운싱 기능이 올바르게 작동하도록 수정하기
+
+> 💬 문제 설명 (번역)  
+> 각 버튼 클릭은 1초 후 메시지를 보여주는 디바운싱 처리가 되어 있습니다. 그러나 버튼 하나를 클릭한 후 다른 버튼을 클릭하면, 첫 번째 버튼의 메시지가 사라지고 마지막 버튼만 표시됨  
+> 힌트: 모든 버튼이 동일한 timeoutID를 공유하고 있어 상호 간섭이 발생합니다. 각 버튼이 별도의 timeout ID를 갖도록 바꿔야 함  
+
+#### 해설
+
+문제는 let timeoutID;가 컴포넌트 바깥에 있어 모든 버튼이 같은 timeoutID를 공유한다는 점입니다. 이로 인해 하나의 버튼이 setTimeout을 호출하면 다른 버튼의 timeout도 덮어쓰게 됩니다.
+
+**해결 방법**: 각 버튼 내부에서 useRef를 사용하여 자신만의 timeout을 가지도록 함
+```jsx
+const timeoutRef = useRef(null);
+```
+
+#### 학습 포인트
+- 컴포넌트 간 상태 충돌 방지를 위해 ref를 로컬 상태처럼 사용할 수 있다.
+- 같은 컴포넌트를 여러 번 사용할 때, ref는 각 인스턴스마다 독립적으로 유지된다.
+
+#### 출제 의도
+- 컴포넌트 인스턴스 간 독립성 유지 개념을 학습
+- 디바운싱, 비동기 타이머 관리 시 ref의 적절한 활용법을 익히도록 함
+
+### 4. Read the latest state
+> 최신 state 값을 읽도록 수정하기
+
+> 💬 문제 설명 (번역)  
+> “Send 버튼을 클릭하면 3초 후 메시지를 전송합니다. 그런데 클릭한 후 입력값을 수정해도 3초 후에는 클릭 당시의 메시지가 그대로 전송됩니다. 최신 입력값을 반영하도록 수정해보세요.”
+
+#### 해설
+state는 매 렌더마다 스냅샷처럼 유지되기 때문에, setTimeout 안에서는 클릭 당시의 값만 기억하고 나중에 변경된 값을 모르고 있음
+
+**해결 방법**: text state 값을 ref에도 저장해서 항상 최신 값을 유지하게 하고, setTimeout에서는 `ref`를 참조하도록 함
+```jsx
+const textRef = useRef(text);
+textRef.current = e.target.value;
+...
+alert(textRef.current);
+```
+
+#### 학습 포인트
+- 비동기 작업에서는 `state`의 스냅샷 특성을 인지해야 함
+- 최신 값을 보존하려면 `state` + `ref` 조합이 유용함
+
+#### 출제 의도
+- `state`와 `ref`의 차이를 시간 흐름 관점에서 비교하게 함
+- 비동기 상황에서 `state`만으로는 부족할 수 있음을 체감하게 함
